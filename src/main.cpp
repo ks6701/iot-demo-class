@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <WiFi.h> 
 #include <Wire.h>
 
@@ -7,16 +8,17 @@
 
 #define MOISTURE_SENSOR_PIN 33 // D33 pin on ESP32
 
-char ssid[] = "Huloiarnata";   // your network SSID (name) 
-char pass[] = "test1234";   // your network password
+char ssid[] = "YOUR-SSID-HERE";   // your network SSID (name) 
+char pass[] = "s0m3_l33t_p4ssw0rd";   // your network password
 WiFiClient  client;
 
 const float THRESHOLD = 50.0;
 
-unsigned long myChannelNumber = 2462917;
-const char * myWriteAPIKey = "PLDFKWER143MNEFY";
+unsigned long myChannelNumber = 12345;
+const char * myWriteAPIKey = "API-KEY";
 
 Adafruit_BMP280 bmp; // I2C
+
 
 void setup() {
   Serial.begin(115200);  //Initialize serial
@@ -33,8 +35,8 @@ void setup() {
   }
 }
 
-void loop() {
 
+void loop() {
   // Connect or reconnect to WiFi
   if(WiFi.status() != WL_CONNECTED){
     Serial.print("[+] Attempting to connect to SSID: ");
@@ -46,7 +48,7 @@ void loop() {
     Serial.println("\n[+] Connected.");
   }
 
-// Moisture Sensor code  
+// poll moisture data  
   int sensorValue = analogRead(MOISTURE_SENSOR_PIN);
   float moisture = map(sensorValue, 0, 4095, 0, 100); // map to percentage
   moisture = (moisture - 100) * -1;
@@ -55,19 +57,30 @@ void loop() {
   Serial.print(moisture);
   Serial.println("%");
 
-  // Write to ThingSpeak. There are up to 8 fields in a channel, allowing you to store up to 8 different
-  // pieces of information in a channel.  Here, we write to field 1.
+  // push moisture data to thingspeak dashboard
   int x = ThingSpeak.writeField(myChannelNumber, 1, moisture, myWriteAPIKey);
   if(x == 200){
     Serial.println("[+] Channel update successful.");
+    delay(500);
   }
   else{
     Serial.println("[*] Problem updating channel. HTTP error code " + String(x));
   }
-// BMP280 Sensor Code
+  // poll sensor data
+  float temperature = bmp.readTemperature();
   Serial.print("Temperature = ");
-  Serial.print(bmp.readTemperature());
+  Serial.print(temperature);
   Serial.println(" *C");
+
+  // push temperature data to thingspeak dashboard
+  x = ThingSpeak.writeField(myChannelNumber, 2, temperature, myWriteAPIKey);
+  if(x == 200){
+    Serial.println("[+] Channel update successful.");
+    delay(500);
+  }
+  else{
+    Serial.println("[*] Problem updating channel. HTTP error code " + String(x));
+  }
 
   Serial.print("Pressure = ");
   Serial.print(bmp.readPressure());
