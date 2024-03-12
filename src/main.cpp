@@ -6,15 +6,13 @@
 #include <Adafruit_BMP280.h> 
 #include "ThingSpeak.h"
 
-#define MOISTURE_SENSOR_PIN 33 // D33 pin on ESP32
+#define MOISTURE_SENSOR_PIN 34 // A0 pin on ESP32
 
 char ssid[] = "YOUR-SSID-HERE";   // your network SSID (name) 
 char pass[] = "s0m3_l33t_p4ssw0rd";   // your network password
 WiFiClient  client;
 
-const float THRESHOLD = 50.0;
-
-unsigned long myChannelNumber = 12345;
+unsigned long myChannelNumber = 2465018;
 const char * myWriteAPIKey = "API-KEY";
 
 Adafruit_BMP280 bmp; // I2C
@@ -48,32 +46,28 @@ void loop() {
     Serial.println("\n[+] Connected.");
   }
 
-// poll moisture data  
+  // poll moisture data  
   int sensorValue = analogRead(MOISTURE_SENSOR_PIN);
-  float moisture = map(sensorValue, 0, 4095, 0, 100); // map to percentage
-  moisture = (moisture - 100) * -1;
+  float moisture = (100 - ((sensorValue / 4095.00) * 100));   // soil moisture reading
 
   Serial.print("[*] Soil Moisture: ");
   Serial.print(moisture);
   Serial.println("%");
 
-  // push moisture data to thingspeak dashboard
-  int x = ThingSpeak.writeField(myChannelNumber, 1, moisture, myWriteAPIKey);
-  if(x == 200){
-    Serial.println("[+] Channel update successful.");
-    delay(500);
-  }
-  else{
-    Serial.println("[*] Problem updating channel. HTTP error code " + String(x));
-  }
+  // stage moisture field
+  ThingSpeak.setField(1, moisture);
+
   // poll sensor data
   float temperature = bmp.readTemperature();
   Serial.print("Temperature = ");
   Serial.print(temperature);
   Serial.println(" *C");
 
-  // push temperature data to thingspeak dashboard
-  x = ThingSpeak.writeField(myChannelNumber, 2, temperature, myWriteAPIKey);
+  // stage temperature field
+  ThingSpeak.setField(2, temperature);
+
+  // push data to thingspeak dashboard
+  int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   if(x == 200){
     Serial.println("[+] Channel update successful.");
     delay(500);
@@ -81,10 +75,6 @@ void loop() {
   else{
     Serial.println("[*] Problem updating channel. HTTP error code " + String(x));
   }
-
-  Serial.print("Pressure = ");
-  Serial.print(bmp.readPressure());
-  Serial.println(" Pa");
 
   delay(2000); // Wait 2 seconds to update the channel again
 }
