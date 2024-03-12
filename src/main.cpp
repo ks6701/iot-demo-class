@@ -54,6 +54,7 @@ void loop() {
   Serial.print(moisture);
   Serial.println("%");
 
+  // stage moisture field
   ThingSpeak.setField(1, moisture);
 
   // poll sensor data
@@ -62,6 +63,7 @@ void loop() {
   Serial.print(temperature);
   Serial.println(" *C");
 
+  // stage temperature field
   ThingSpeak.setField(2, temperature);
 
   // push data to thingspeak dashboard
